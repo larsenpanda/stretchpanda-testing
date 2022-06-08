@@ -1,0 +1,7 @@
+- import_playbook: install-node-deps.yml
+
+- import_playbook: prepare-data-dir.yml
+
+- import_playbook: install-redpanda.yml
+
+- import_playbook: start-redpanda.yml

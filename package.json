@@ -1,0 +1,17 @@
+{
+  "name": "rp-stretch",
+  "version": "1.0.0",
+  "description": "Testing of Redpanda stretch cluster",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Chris Larsen",
+  "license": "ISC",
+  "dependencies": {
+    "child-process": "^1.0.2",
+    "cookie-parser": "^1.4.6",
+    "express": "^4.18.1",
+    "express-session": "^1.17.3"
+  }
+}

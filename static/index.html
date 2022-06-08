@@ -1,0 +1,213 @@
+<html>
+  <head>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+  <title>Redpanda Stretch</title>
+  <style>
+    .resultsarea {
+      background-color: lightgray;
+      margin: 10px;
+      font-size: 8pt;
+      text-align: left;
+      padding: 7px;
+    }
+    .instancerow {
+      width: 100%;
+      border-bottom: 1px solid black;
+    }
+    .actionarea {
+      min-width: 200px;
+      text-align: right;
+    }
+    .killswitch {
+      margin: 15px;
+    }
+    .pem_input_text {
+      border-radius: 3px;
+      height: 35px;
+      width: 300px
+    }
+    #pempathcontainer {
+      margin-top: 7px;
+      padding-top: 7px;
+    }
+    .titlearea {
+      display: inline-flex;
+      margin: 10px;
+    }
+    .envactions {
+      margin-top: 20px;
+    }
+    .maincontainer {
+      border: 2px solid black;
+      margin-top: 20px;
+    }
+    .cmdtext {
+      font-family:'Courier New', Courier, monospace
+    }
+  </style>
+  </head>
+  <body>
+    <div class="titlearea"><h1 class="title">Multi-Region Environment</h1></div>
+    <div align="center" ><h3 style="color:#8b0000">EC2 Instances</h3></div>
+    <div class="container maincontainer" id="maincontainer" align="center"></div>
+    <div class="container envactions" id="envactions"></div>
+
+    <script>
+        $.get( "/getResources", function( data ) {
+            
+            var ssh_ips=[];
+            var sesh_pem='';
+            var resourceInt=0;
+            var resources=JSON.parse(data);
+            var path_to_pem=resources[resources.length-1].pempath || '';
+            
+            console.log('path_to_pem',path_to_pem)
+            console.log('resources path_to_pem',path_to_pem);
+
+            if (path_to_pem ==='' ) {
+              $('#maincontainer').append(`<div id="pempathcontainer" class="container"><input type="text" id="pem_input_text" class="form-input pem_input_text" name="pem_path" placeholder="enter the path to your pem file">
+              <button class="btn btn-primary pem_input_btn" id="pem_path_btn">Submit</button></div>`);
+              $('#pem_path_btn').click(function() {
+                var sendObj={};
+                sendObj.pempath=$('#pem_input_text').val();
+                console.log('path_to_pem',path_to_pem);
+                $.post("/setPemPath",
+                sendObj,
+                  function(res) {
+                    $("#pempathcontainer").hide();
+                    console.log('yay posted',res)
+                    $('.titlearea').append('<img class="pemimg" title="PEM used: '+path_to_pem+'" width="25px" height="25px" src="https://www.smallbizpro.net/img/password.png">');
+                  }, 'text')
+              })
+            } else {
+              $('.titlearea').append('<img class="pemimg" title="PEM used: '+path_to_pem+'" width="25px" height="25px" src="https://www.smallbizpro.net/img/password.png">');
+              $('.pemimg').tooltip({show: {effect:"none", delay:0}});
+              $("#pempathcontainer").hide();
+            }
+            
+            resources.forEach(function(resource) {
+                var pemfile=path_to_pem || '[path to <b>'+resource.values.key_name+'</b> key file] '
+                if (resource.type==='aws_instance') {
+                  ssh_ips.push(resource.values.public_ip)
+                  resourceInt=resourceInt+1;
+                  
+                  var instancerow=`<div class="row instancerow">
+                      <div class="col-sm resultsarea">
+                        <div id="resultsarea`+resourceInt+`"></div>
+                      </div>
+                      <div class="col-sm actionarea">
+                        <button class="btn btn-danger killswitch" ec2tokill="`+resourceInt+`">Stop RP</button>
+                        <button class="btn btn-success startswitch" ec2tostart="`+resourceInt+`" style="display: none">Start RP</button>
+                      </div>
+                    </div>`;
+                    $('#maincontainer').append(instancerow);
+                    $('#resultsarea'+resourceInt).append(resource.type+': '+resource.name+'('+resource.values.instance_type+')<br>');
+                    $('#resultsarea'+resourceInt).append('AZ: '+resource.values.availability_zone+'<br>');
+                    $('#resultsarea'+resourceInt).append('id: '+resource.values.id+'<br>');
+                    $('#resultsarea'+resourceInt).append('Public IP: '+resource.values.public_ip+'<br>');
+                    $('#resultsarea'+resourceInt).append('Private IP: '+resource.values.private_ip+'<br>');
+                    $('#resultsarea'+resourceInt).append('ssh: ssh -i '+ pemfile +' ec2-user@'+resource.values.public_ip+'<br>');
+                    
+
+                    var resourceToActOn=resourceInt;
+                    var mydata={};
+                    var arrayInt=resourceToActOn-1;
+                    mydata.ssh_ip=ssh_ips[arrayInt];
+                    console.log('mydata.ssh_ip',mydata.ssh_ip)
+
+                    // $.ajax({
+                    //     url: 'http://localhost:3000/statusEC2',
+                    //     type: 'post',
+                    //     contentType: 'application/json',
+                    //     data: JSON.stringify(mydata),
+                    //     success: function( data, textStatus, jQxhr ){
+                    //         if (data==='') {
+                    //           console.log('nada');
+                    //         } else {
+                    //           console.log('success data',data);
+                    //         }
+                            
+                    //     },
+                    //     error: function( jqXhr, textStatus, errorThrown ){
+                    //         console.log( errorThrown );
+                    //     }
+                    // });
+
+                    $('.killswitch').unbind().click(function() {
+                        var resourceToActOn=parseInt($(this).attr('ec2tokill'));
+                        var mydata={};
+                        var arrayInt=resourceToActOn-1;
+                        mydata.ssh_ip=ssh_ips[arrayInt];
+
+                        $.ajax({
+                            url: 'http://localhost:3000/killEC2',
+                            type: 'post',
+                            contentType: 'application/json',
+                            data: JSON.stringify(mydata),
+                            success: function( data, textStatus, jQxhr ){
+                                console.log('success post');
+                                console.log('kill response data',data)
+                                if (data==='killed') {
+                                  console.log('killed yo')
+                                  $('button[ec2tokill='+resourceToActOn+']').toggle();
+                                  $('button[ec2tostart='+resourceToActOn+']').toggle();
+                                }
+                            },
+                            error: function( jqXhr, textStatus, errorThrown ){
+                                console.log( errorThrown );
+                            }
+                        });
+
+                    });
+
+                    $('.startswitch').unbind().click(function() {
+                        var resourceToActOn=parseInt($(this).attr('ec2tostart'));
+                        var mydata={};
+                        var arrayInt=resourceToActOn-1;
+                        mydata.ssh_ip=ssh_ips[arrayInt];
+
+                        $.ajax({
+                            url: 'http://localhost:3000/startEC2',
+                            type: 'post',
+                            contentType: 'application/json',
+                            data: JSON.stringify(mydata),
+                            success: function( data, textStatus, jQxhr ){
+                                console.log('success post');
+                                console.log('kill response data',data)
+                                if (data==='started') {
+                                  console.log('started yo')
+                                  $('button[ec2tokill='+resourceToActOn+']').toggle();
+                                  $('button[ec2tostart='+resourceToActOn+']').toggle();
+                                }
+                            },
+                            error: function( jqXhr, textStatus, errorThrown ){
+                                console.log( errorThrown );
+                            }
+                        });
+
+                    });
+                }
+
+            })
+            $("#envactions").append("<h2>Helpful Commands</h2>");
+        $("#envactions").append("<div><div width: 300px;'><b>Create a Topic with RF=3 and 21 partitions: </b> <div class='cmdtext'>rpk topic create testp21 -r 3 -p 21</div></div></div>");
+        $("#envactions").append("<div><div width: 300px;'><b>Install Java: </b> <div class='cmdtext'>sudo yum install java-11-amazon-corretto</div></div></div>");
+        $("#envactions").append("<div><div width: 300px;'><b>Get Kafka binaries: </b> <div class='cmdtext'>curl -O http://packages.confluent.io/archive/7.1/confluent-7.1.1.tar.gz && tar zxvf confluent-7.1.1.tar.gz && cd confluent-7.1.1/bin</div></div></div>");
+        $("#envactions").append("<div><div width: 300px;'><b>Set bin folder in your path: </b> <div class='cmdtext'>export PATH=$PATH:/home/ec2-user/confluent-7.1.1/bin</div></div></div>");
+        $("#envactions").append("<div><div width: 300px;'><b>Run Perf Test with 1M recores, 1000 recs/sec, 10KB each, from the first node, 8196 batch size and acks=all: </b> <div class='cmdtext'>kafka-producer-perf-test --topic testp21 --num-records 1000000 --throughput 1000 --record-size 10 --producer-props bootstraservers="+resources[0].values.private_ip+":9092,"+resources[1].values.public_ip+":9092,"+resources[2].values.public_ip+":9092 batch.size=8196 acks=all</div></div></div>");
+        // $("#destroyenv").click(function() {
+        //   $.get( "/destroyTF", function( data ) {
+        //     $("#envactions").append(data)
+        //   })
+        // })
+        });
+
+        
+
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+  </body>
+</html>

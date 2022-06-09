@@ -177,7 +177,7 @@
         $("#envactions").append("<div><div width: 300px;'><b>Install Java: </b> <div class='cmdtext'>sudo yum install java-11-amazon-corretto</div></div></div>");
         $("#envactions").append("<div><div width: 300px;'><b>Get Kafka binaries: </b> <div class='cmdtext'>curl -O http://packages.confluent.io/archive/7.1/confluent-7.1.1.tar.gz && tar zxvf confluent-7.1.1.tar.gz && cd confluent-7.1.1/bin</div></div></div>");
         $("#envactions").append("<div><div width: 300px;'><b>Set bin folder in your path: </b> <div class='cmdtext'>export PATH=$PATH:/home/ec2-user/confluent-7.1.1/bin</div></div></div>");
-        $("#envactions").append("<div><div width: 300px;'><b>Run Perf Test with 1M recores, 1000 recs/sec, 10KB each, from the first node, 8196 batch size and acks=all: </b> <div class='cmdtext'>kafka-producer-perf-test --topic testp21 --num-records 1000000 --throughput 1000 --record-size 10 --producer-props bootstraservers="+resources[0].values.private_ip+":9092,"+resources[1].values.public_ip+":9092,"+resources[2].values.public_ip+":9092 batch.size=8196 acks=all</div></div></div>");
+        $("#envactions").append("<div><div width: 300px;'><b>Run Perf Test with 1M recores, 1000 recs/sec, 10KB each, from the first node, 8196 batch size and acks=all: </b> <div class='cmdtext'>kafka-producer-perf-test --topic testp21 --num-records 1000000 --throughput 1000 --record-size 10 --producer-props bootstrap.servers="+resources[0].values.private_ip+":9092,"+resources[1].values.public_ip+":9092,"+resources[2].values.public_ip+":9092 batch.size=8196 acks=all</div></div></div>");
         // $("#destroyenv").click(function() {
         //   $.get( "/destroyTF", function( data ) {
         //     $("#envactions").append(data)

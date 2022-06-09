@@ -77,7 +77,7 @@
                 sendObj,
                   function(res) {
                     $("#pempathcontainer").hide();
-                    console.log('yay posted',res)
+                    location.reload(true);
                     $('.titlearea').append('<img class="pemimg" title="PEM used: '+path_to_pem+'" width="25px" height="25px" src="https://www.smallbizpro.net/img/password.png">');
                   }, 'text')
               })
@@ -110,30 +110,11 @@
                     $('#resultsarea'+resourceInt).append('Private IP: '+resource.values.private_ip+'<br>');
                     $('#resultsarea'+resourceInt).append('ssh: ssh -i '+ pemfile +' ec2-user@'+resource.values.public_ip+'<br>');
                     
-
                     var resourceToActOn=resourceInt;
                     var mydata={};
                     var arrayInt=resourceToActOn-1;
                     mydata.ssh_ip=ssh_ips[arrayInt];
                     console.log('mydata.ssh_ip',mydata.ssh_ip)
-
-                    // $.ajax({
-                    //     url: 'http://localhost:3000/statusEC2',
-                    //     type: 'post',
-                    //     contentType: 'application/json',
-                    //     data: JSON.stringify(mydata),
-                    //     success: function( data, textStatus, jQxhr ){
-                    //         if (data==='') {
-                    //           console.log('nada');
-                    //         } else {
-                    //           console.log('success data',data);
-                    //         }
-                            
-                    //     },
-                    //     error: function( jqXhr, textStatus, errorThrown ){
-                    //         console.log( errorThrown );
-                    //     }
-                    // });
 
                     $('.killswitch').unbind().click(function() {
                         var resourceToActOn=parseInt($(this).attr('ec2tokill'));
